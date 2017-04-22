@@ -1,7 +1,7 @@
 @echo off
 
 REM Programs
-set RUNNER="..\packages\xunit.runner.console.2.2.0\tools\xunit.console.exe"
+set RUNNER="..\packages\xunit.runner.console.2.2.0\tools\xunit.console.x86.exe"
 set COVERAGE="..\packages\OpenCover.4.6.519\tools\OpenCover.Console.exe"
 set REPORTING="..\packages\ReportGenerator.2.5.6\tools\ReportGenerator"
 set ASSEMBLY=TheGarageLab.Database

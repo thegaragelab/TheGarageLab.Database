@@ -72,7 +72,13 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="BaseDataModel.cs" />
+    <Compile Include="Database.cs" />
+    <Compile Include="DefaultMigrator.cs" />
+    <Compile Include="IDatabase.cs" />
+    <Compile Include="IMigrator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SchemaMetadata.cs" />
   </ItemGroup>
   <ItemGroup>
     <None Include="packages.config" />
