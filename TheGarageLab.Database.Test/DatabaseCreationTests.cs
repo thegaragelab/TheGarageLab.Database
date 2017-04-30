@@ -27,6 +27,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("CreateWithNoModelsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile);
             Assert.True(File.Exists(dbfile));
             Assert.Equal(0, db.GetTables().Count);
@@ -40,6 +41,7 @@ namespace TheGarageLab.Database.Test
         public void CreateWithNoModelsWillSucceedInMemory()
         {
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(Database.MEMORY_DATABASE);
             Assert.Equal(0, db.GetTables().Count);
         }
@@ -53,6 +55,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("CreateWithModelsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.True(File.Exists(dbfile));
             Assert.Equal(1, db.GetTables().Count);
@@ -66,6 +69,7 @@ namespace TheGarageLab.Database.Test
         public void CreateWithModelsWillSucceedInMemory()
         {
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(Database.MEMORY_DATABASE, typeof(SampleModels.ModelA));
             Assert.Equal(1, db.GetTables().Count);
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
@@ -81,6 +85,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("CreateWithInvalidModelWillNotCreateDatabase.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             Assert.ThrowsAny<Exception>(() => db.Create(dbfile, typeof(SampleModels.ModelB_Invalid)));
             Assert.False(File.Exists(dbfile));
         }
@@ -95,6 +100,7 @@ namespace TheGarageLab.Database.Test
             Assert.False(File.Exists(dbfile));
             // Create the database with a single model
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.True(File.Exists(dbfile));
             Assert.Equal(1, db.GetTables().Count);
@@ -102,6 +108,7 @@ namespace TheGarageLab.Database.Test
             Assert.Null(db.GetTableInfo(typeof(SampleModels.ModelB)));
             // Recreate the database with a new model
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
             Assert.Equal(2, db.GetTables().Count);
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
@@ -118,6 +125,7 @@ namespace TheGarageLab.Database.Test
             Assert.False(File.Exists(dbfile));
             // Create the database with a single model
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
             Assert.True(File.Exists(dbfile));
             Assert.Equal(2, db.GetTables().Count);
@@ -125,6 +133,7 @@ namespace TheGarageLab.Database.Test
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelB)));
             // Recreate the database with a new model
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.Equal(1, db.GetTables().Count);
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
@@ -141,6 +150,7 @@ namespace TheGarageLab.Database.Test
             Assert.False(File.Exists(dbfile));
             // Create the database with two models
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
             // Insert data in the database
             using (var conn = db.Open())
@@ -156,9 +166,11 @@ namespace TheGarageLab.Database.Test
             }
             // Try and upgrade to a faulty model
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             Assert.ThrowsAny<Exception>(() => db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB_Invalid)));
             // Ensure that data was not lost in the process
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
             using (var conn = db.Open())
             {

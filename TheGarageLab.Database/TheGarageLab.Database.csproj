@@ -79,6 +79,8 @@
     <Compile Include="MigrationHelpers.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="SchemaManager.cs" />
+    <Compile Include="SqlLogger\DbCommandLogger.cs" />
+    <Compile Include="SqlLogger\DbConnectionLogger.cs" />
     <Compile Include="TableInfo.cs" />
   </ItemGroup>
   <ItemGroup>

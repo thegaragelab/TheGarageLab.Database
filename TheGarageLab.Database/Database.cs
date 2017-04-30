@@ -187,6 +187,12 @@ namespace TheGarageLab.Database
 
         #region Implementation of IDatabase
         /// <summary>
+        /// Severity level for SQL logging. If null no logging
+        /// will be performed.
+        /// </summary>
+        public Severity? SqlLoggingSeverity { get; set; }
+
+        /// <summary>
         /// Create (or upgrade) the database.
         /// </summary>
         /// <param name="connectionString"></param>
@@ -248,6 +254,17 @@ namespace TheGarageLab.Database
         public IDbConnection Open()
         {
             Ensure.IsNotNull<InvalidOperationException>(ConnectionFactory);
+            // Use a logging connection if requested
+            if (SqlLoggingSeverity != null)
+            {
+                return new SqlLogger.DbConnectionLogger(
+                    Logger,
+                    ConnectionFactory.Open(),
+                    (Severity)SqlLoggingSeverity
+                    );
+            }
+            // Just use a normal connection
+
             return ConnectionFactory.Open();
         }
 

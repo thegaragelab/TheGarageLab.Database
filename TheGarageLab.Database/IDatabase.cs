@@ -1,11 +1,18 @@
 ﻿using System;
 using System.Data;
 using System.Collections.Generic;
+using TheGarageLab.Logging;
 
 namespace TheGarageLab.Database
 {
     public interface IDatabase
     {
+        /// <summary>
+        /// Severity level for SQL logging. If null no logging
+        /// will be performed.
+        /// </summary>
+        Severity? SqlLoggingSeverity { get; set; }
+
         /// <summary>
         /// Create (or upgrade) the database.
         /// </summary>
