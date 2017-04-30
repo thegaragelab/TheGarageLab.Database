@@ -22,9 +22,8 @@ namespace TheGarageLab.Database
         /// <summary>
         /// Get a migrator for a given type.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
         /// <returns></returns>
-        IMigrator<T> GetMigrator<T>() where T : class, new();
+        IMigrator GetMigrator(Type t);
 
         /// <summary>
         /// Get information about a table by it's name

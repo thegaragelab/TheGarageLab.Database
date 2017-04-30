@@ -1,6 +1,8 @@
 ﻿using System;
 using System.IO;
 using System.Data;
+using System.Linq;
+using System.Reflection;
 using System.Collections.Generic;
 using ServiceStack.OrmLite;
 using TheGarageLab.Ensures;
@@ -103,7 +105,38 @@ namespace TheGarageLab.Database
         /// <param name="t"></param>
         private void MigrateSingleTable(Type t)
         {
-            throw new NotImplementedException();
+            // Set up working table names
+            string table = t.GetModelMetadata().ModelName;
+            string backup = table + "_orig";
+            // Backup current table and create new
+            using (var conn = Open())
+            {
+                MigrationHelpers.RenameTable(conn, table, backup);
+                conn.CreateTableIfNotExists(t);
+            }
+            // Find the appropriate migrator
+            var migrator = GetMigrator(t);
+            migrator.BeginMigration(GetTableInfo(t).Version, t);
+            // Get the correct insertion method
+            var insertionMethod = 
+                typeof(OrmLiteWriteApi).GetMethods()
+                    .Where(m => (m.Name == "Insert") && (m.ReturnType == typeof(Int64)))
+                    .First()
+                    .MakeGenericMethod(t);
+            // Now migrate each record
+            using (var conn = Open())
+            {
+                IDbCommand cmd = conn.CreateCommand();
+                cmd.CommandText = $"SELECT * FROM '{backup}'";
+                IDataReader reader = cmd.ExecuteReader();
+                while (reader.Read())
+                {
+                    object record = migrator.MigrateRecord(reader);
+                    insertionMethod.Invoke(null, new object[] { conn, record, false });
+                }
+                // Remove the backup
+                MigrationHelpers.DropTable(conn, backup);
+            }
         }
 
         /// <summary>
@@ -225,16 +258,15 @@ namespace TheGarageLab.Database
         /// to a default migration tactic. Child classes may override this
         /// to determine the appropriate migrators in a different way.
         /// </summary>
-        /// <typeparam name="T"></typeparam>
+        /// <param name="t"></param>
         /// <returns></returns>
-        public virtual IMigrator<T> GetMigrator<T>() where T : class, new()
+        public virtual IMigrator GetMigrator(Type t)
         {
             // See if the type provides it's own migrator
-            var t = typeof(T);
-            if (typeof(IMigrator<T>).IsAssignableFrom(t))
-                return new T() as IMigrator<T>;
+            if (typeof(IMigrator).IsAssignableFrom(t))
+                return (IMigrator)Activator.CreateInstance(t);
             // Use the generic one
-            return new DefaultMigrator<T>();
+            return new DefaultMigrator();
         }
 
         /// <summary>
