@@ -92,5 +92,41 @@ namespace TheGarageLab.Database.Test
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
             Assert.Null(db.GetTableInfo(typeof(SampleModels.ModelB)));
         }
+
+        /// <summary>
+        /// Failure in schema change will not lose data.
+        /// </summary>
+        [Fact]
+        public void MigrateWithInvalidModelWillNotLoseData()
+        {
+            string dbfile = GetTestDatabaseFilename("MigrateWithInvalidModelWillNotLoseData.sqlite");
+            Assert.False(File.Exists(dbfile));
+            // Create the database with two models
+            IDatabase db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
+            // Insert data in the database
+            using (var conn = db.Open())
+            {
+                conn.Insert<SampleModels.ModelA>(new SampleModels.ModelA()
+                {
+                    Value = "Test"
+                });
+                conn.Insert<SampleModels.ModelB>(new SampleModels.ModelB()
+                {
+                    Data = 42
+                });
+            }
+            // Try and upgrade to a faulty model
+            db = new Database(CreateLogger());
+            Assert.ThrowsAny<Exception>(() => db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB_Invalid)));
+            // Ensure that data was not lost in the process
+            db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
+            using (var conn = db.Open())
+            {
+                Assert.Equal(1, conn.Select<SampleModels.ModelA>().Count);
+                Assert.Equal(1, conn.Select<SampleModels.ModelB>().Count);
+            }
+        }
     }
 }

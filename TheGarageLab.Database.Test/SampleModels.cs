@@ -1,4 +1,5 @@
-﻿using System;
+﻿using ServiceStack.DataAnnotations;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -11,6 +12,7 @@ namespace TheGarageLab.Database.Test
     /// </summary>
     public class SampleModels
     {
+        [Alias("ModelA")]
         public class ModelA
         {
             public static int VERSION = 1;
@@ -20,6 +22,7 @@ namespace TheGarageLab.Database.Test
             public string Value { get; set; }
         }
 
+        [Alias("ModelA")]
         public class ModelA_V2
         {
             public static int VERSION = 2;
@@ -31,6 +34,7 @@ namespace TheGarageLab.Database.Test
             public string Description { get; set; }
         }
 
+        [Alias("ModelB")]
         public class ModelB
         {
             public int Id { get; set; }
@@ -38,6 +42,7 @@ namespace TheGarageLab.Database.Test
             public int Data { get; set; }
         }
 
+        [Alias("ModelB")]
         public class ModelB_V2
         {
             public static int VERSION = 2;
@@ -45,6 +50,12 @@ namespace TheGarageLab.Database.Test
             public int Id { get; set; }
 
             public string Data { get; set; }
+        }
+
+        [Alias("ModelB")]
+        public class ModelB_Invalid
+        {
+            public static int VERSION = 3;
         }
     }
 }
