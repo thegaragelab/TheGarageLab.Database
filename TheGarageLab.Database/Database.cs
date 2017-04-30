@@ -36,18 +36,17 @@ namespace TheGarageLab.Database
 
         #region Helpers
         /// <summary>
-        /// Create a backup of the database and return the name of the
-        /// backup file.
+        /// Determine the name of the backup file to use. Will
+        /// return null if there is nothing to backup.
         /// </summary>
         /// <param name="database"></param>
         /// <returns></returns>
-        private string BackupDatabase(string database)
+        private string GetBackupFilename(string database)
         {
-            // Special case for in memory database or no database yet
+            // Must have an existing file database to backup
             if ((database == MEMORY_DATABASE) || !File.Exists(database))
                 return null;
-            // Create a backup of the file
-            string backupFile = Path.Combine(
+            return Path.Combine(
                 Path.GetDirectoryName(database),
                 string.Format("{0}-{1}{2}",
                     Path.GetFileNameWithoutExtension(database),
@@ -55,8 +54,20 @@ namespace TheGarageLab.Database
                     Path.GetExtension(database)
                     )
                 );
-            File.Copy(database, backupFile);
-            return backupFile;
+        }
+
+        /// <summary>
+        /// Create a backup of the database and return the name of the
+        /// backup file.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="backupFile"></param>
+        /// <returns></returns>
+        private void BackupDatabase(string database, string backupFile)
+        {
+            // Create a backup of the file
+            if (backupFile != null)
+                File.Copy(database, backupFile);
         }
 
         /// <summary>
@@ -66,13 +77,12 @@ namespace TheGarageLab.Database
         /// <param name="backupFile"></param>
         private void RestoreBackup(string database, string backupFile)
         {
-            // Don't restore if no backup created
-            if ((backupFile == null) || !File.Exists(backupFile))
-                return;
-            // Remove the original
+            // Remove the original database
             if (File.Exists(database))
                 File.Delete(database);
-            File.Move(backupFile, database);
+            // Restore if we have a back up
+            if ((backupFile != null) && File.Exists(backupFile))
+                File.Move(backupFile, database);
         }
 
         /// <summary>
@@ -152,6 +162,9 @@ namespace TheGarageLab.Database
         public void Create(string connectionString, params Type[] models)
         {
             Ensure.IsNull<InvalidOperationException>(ConnectionFactory);
+            // Create a backup in case we need to make changes
+            string backupDatabase = GetBackupFilename(connectionString);
+            // Set up the database
             ConnectionFactory = new OrmLiteConnectionFactory(
                 connectionString,
                 SqliteDialect.Provider
@@ -162,11 +175,15 @@ namespace TheGarageLab.Database
             List<string> removals;
             var metadata = new SchemaManager(Logger, this);
             if (!metadata.GetRequiredChanges(models, out creations, out migrations, out removals))
-                return; // Nothing to do
-            // We have changes to make so back up the existing database
-            string backupDatabase = BackupDatabase(connectionString);
+            {
+                // Remove the backup and continue
+                RemoveBackup(backupDatabase);
+                return;
+            }
+            // Apply the changes
             try
             {
+                BackupDatabase(connectionString, backupDatabase);
                 MigrateTables(metadata, migrations);
                 RemoveTables(metadata, removals);
                 CreateNewTables(metadata, creations);

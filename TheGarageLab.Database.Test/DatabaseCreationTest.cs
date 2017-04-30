@@ -33,6 +33,18 @@ namespace TheGarageLab.Database.Test
         }
 
         /// <summary>
+        /// A database with no models is not much use but it
+        /// will work even in a memory database
+        /// </summary>
+        [Fact]
+        public void CreateWithNoModelsWillSucceedInMemory()
+        {
+            IDatabase db = new Database(CreateLogger());
+            db.Create(Database.MEMORY_DATABASE);
+            Assert.Equal(0, db.GetTables().Count);
+        }
+
+        /// <summary>
         /// Creating a database with models will work.
         /// </summary>
         [Fact]
@@ -45,6 +57,32 @@ namespace TheGarageLab.Database.Test
             Assert.True(File.Exists(dbfile));
             Assert.Equal(1, db.GetTables().Count);
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
+        }
+
+        /// <summary>
+        /// Creating a database with models will work with an in memory database.
+        /// </summary>
+        [Fact]
+        public void CreateWithModelsWillSucceedInMemory()
+        {
+            IDatabase db = new Database(CreateLogger());
+            db.Create(Database.MEMORY_DATABASE, typeof(SampleModels.ModelA));
+            Assert.Equal(1, db.GetTables().Count);
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
+        }
+
+        /// <summary>
+        /// If the database does not exist and the schema cannot be created
+        /// no file will be created.
+        /// </summary>
+        [Fact]
+        public void CreateWithInvalidModelWillNotCreateDatabase()
+        {
+            string dbfile = GetTestDatabaseFilename("CreateWithInvalidModelWillNotCreateDatabase.sqlite");
+            Assert.False(File.Exists(dbfile));
+            IDatabase db = new Database(CreateLogger());
+            Assert.ThrowsAny<Exception>(() => db.Create(dbfile, typeof(SampleModels.ModelB_Invalid)));
+            Assert.False(File.Exists(dbfile));
         }
 
         /// <summary>
