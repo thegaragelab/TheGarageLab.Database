@@ -29,6 +29,7 @@ namespace TheGarageLab.Database.Test
             IDatabase db = new Database(CreateLogger());
             db.Create(dbfile);
             Assert.True(File.Exists(dbfile));
+            Assert.Equal(0, db.GetTables().Count);
         }
 
         /// <summary>
@@ -42,13 +43,8 @@ namespace TheGarageLab.Database.Test
             IDatabase db = new Database(CreateLogger());
             db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.True(File.Exists(dbfile));
-            // TODO: Access to some metadata would be handy, in the meantime
-            //       we will just make sure we can add entries.
-            using (var conn = db.Open())
-            {
-                var id = conn.Insert<SampleModels.ModelA>(new SampleModels.ModelA());
-                Assert.Equal(1, conn.Select<SampleModels.ModelA>().Count);
-            }
+            Assert.Equal(1, db.GetTables().Count);
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
         }
 
         /// <summary>
@@ -63,16 +59,15 @@ namespace TheGarageLab.Database.Test
             IDatabase db = new Database(CreateLogger());
             db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.True(File.Exists(dbfile));
+            Assert.Equal(1, db.GetTables().Count);
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
+            Assert.Null(db.GetTableInfo(typeof(SampleModels.ModelB)));
             // Recreate the database with a new model
             db = new Database(CreateLogger());
             db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
-            // TODO: Access to some metadata would be handy, in the meantime
-            //       we will just make sure we can add entries.
-            using (var conn = db.Open())
-            {
-                var id = conn.Insert<SampleModels.ModelB>(new SampleModels.ModelB());
-                Assert.Equal(1, conn.Select<SampleModels.ModelB>().Count);
-            }
+            Assert.Equal(2, db.GetTables().Count);
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelB)));
         }
 
         /// <summary>
@@ -81,7 +76,21 @@ namespace TheGarageLab.Database.Test
         [Fact]
         public void RemovingExistingModelsWillSucceed()
         {
-            throw new NotImplementedException();
+            string dbfile = GetTestDatabaseFilename("RemovingExistingModelsWillSucceed.sqlite");
+            Assert.False(File.Exists(dbfile));
+            // Create the database with a single model
+            IDatabase db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
+            Assert.True(File.Exists(dbfile));
+            Assert.Equal(2, db.GetTables().Count);
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelB)));
+            // Recreate the database with a new model
+            db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelA));
+            Assert.Equal(1, db.GetTables().Count);
+            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
+            Assert.Null(db.GetTableInfo(typeof(SampleModels.ModelB)));
         }
     }
 }

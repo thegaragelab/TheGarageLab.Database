@@ -36,7 +36,7 @@ namespace TheGarageLab.Database
             // Make sure we have a metadata table
             using (var conn = Database.Open())
             {
-                conn.CreateTableIfNotExists<SchemaMetadata>();
+                conn.CreateTableIfNotExists<TableInfo>();
             }
         }
 
@@ -72,7 +72,7 @@ namespace TheGarageLab.Database
             using (var conn = Database.Open())
             {
                 // Get the version according to the schema record
-                List<SchemaMetadata> tableInfo = conn.Select<SchemaMetadata>(x => (x.Table == t.GetModelMetadata().ModelName) && (x.Version != currentVersion));
+                List<TableInfo> tableInfo = conn.Select<TableInfo>(x => (x.Table == t.GetModelMetadata().ModelName) && (x.Version != currentVersion));
                 if (tableInfo.Count == 0)
                     return false;
                 if (tableInfo[0].Version > currentVersion)
@@ -92,9 +92,24 @@ namespace TheGarageLab.Database
             using (var conn = Database.Open())
             {
                 // Get the version according to the schema record
-                List<SchemaMetadata> tableInfo = conn.Select<SchemaMetadata>(x => (x.Table == t.GetModelMetadata().ModelName) && (x.Version == currentVersion));
+                List<TableInfo> tableInfo = conn.Select<TableInfo>(x => (x.Table == t.GetModelMetadata().ModelName) && (x.Version == currentVersion));
                 return (tableInfo.Count == 0);
             }
+        }
+
+        /// <summary>
+        /// Get a list of models that are no longer in the schema
+        /// </summary>
+        /// <param name="models"></param>
+        /// <returns></returns>
+        private List<string> GetRemovedModels(Type[] models)
+        {
+            // Get the list of defined models
+            List<string> defined;
+            using (var conn = Database.Open())
+                defined = conn.Select<TableInfo>().Select(r => r.Table).ToList();
+            // Isolate the ones that are no longer required
+            return defined.Where(r => !models.Any(m => m.GetModelMetadata().ModelName == r)).ToList();
         }
         #endregion
 
@@ -109,17 +124,17 @@ namespace TheGarageLab.Database
             string tableName = model.GetModelMetadata().ModelName;
             using (var conn = Database.Open())
             {
-                var modelList = conn.Select<SchemaMetadata>(conn.From<SchemaMetadata>().Where(r => r.Table == tableName));
+                var modelList = conn.Select<TableInfo>(conn.From<TableInfo>().Where(r => r.Table == tableName));
                 if (modelList.Count == 0)
                 {
-                    var metaData = new SchemaMetadata()
+                    var metaData = new TableInfo()
                     {
                         Table = tableName,
                         Version = GetModelVersion(model),
                         Created = DateTime.UtcNow,
                         Modified = DateTime.UtcNow
                     };
-                    conn.Insert<SchemaMetadata>(metaData);
+                    conn.Insert<TableInfo>(metaData);
                 }
                 else
                 {
@@ -131,19 +146,30 @@ namespace TheGarageLab.Database
         }
 
         /// <summary>
+        /// Remove the metadata for a model.
+        /// </summary>
+        /// <param name="model"></param>
+        public void RemoveMetadata(string model)
+        {
+            using (var conn = Database.Open())
+                conn.Delete<TableInfo>(new { Table = model });
+        }
+
+        /// <summary>
         /// Determine what changes are required to bring the database
         /// up to date.
         /// </summary>
         /// <param name="models"></param>
         /// <param name="creations"></param>
         /// <param name="migrations"></param>
+        /// <param name="removals"></param>
         /// <returns></returns>
-        public bool GetRequiredChanges(Type[] models, out List<Type> creations, out List<Type> migrations)
+        public bool GetRequiredChanges(Type[] models, out List<Type> creations, out List<Type> migrations, out List<string> removals)
         {
             // Set up the lists
             creations = new List<Type>();
             migrations = new List<Type>();
-            // Determine what changes to make
+            // Determine what creations or migrations to make
             foreach (var model in models)
             {
                 if (MigrationRequired(model))
@@ -151,8 +177,10 @@ namespace TheGarageLab.Database
                 else if (CreationRequired(model))
                     creations.Add(model);
             }
+            // Determine if models need to be removed
+            removals = GetRemovedModels(models);
             // Indicate if changes are required
-            return (migrations.Any() || creations.Any());
+            return (migrations.Any() || creations.Any() || removals.Any());
         }
         #endregion
     }

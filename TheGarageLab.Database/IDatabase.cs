@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Data;
+using System.Collections.Generic;
 
 namespace TheGarageLab.Database
 {
@@ -24,5 +25,25 @@ namespace TheGarageLab.Database
         /// <typeparam name="T"></typeparam>
         /// <returns></returns>
         IMigrator<T> GetMigrator<T>() where T : class, new();
+
+        /// <summary>
+        /// Get information about a table by it's name
+        /// </summary>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        TableInfo GetTableInfo(string table);
+
+        /// <summary>
+        /// Get information about a table from the model type.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        TableInfo GetTableInfo(Type model);
+
+        /// <summary>
+        /// Get information about all tables
+        /// </summary>
+        /// <returns></returns>
+        List<TableInfo> GetTables();
     }
 }

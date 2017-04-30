@@ -126,6 +126,21 @@ namespace TheGarageLab.Database
                 manager.UpdateMetadata(model);
             }
         }
+
+        /// <summary>
+        /// Remove redundant tables
+        /// </summary>
+        /// <param name="manager"></param>
+        /// <param name="tables"></param>
+        private void RemoveTables(SchemaManager manager, List<string> tables)
+        {
+            foreach (var table in tables)
+            {
+                using (var conn = Open())
+                    MigrationHelpers.DropTable(conn, table);
+                manager.RemoveMetadata(table);
+            }
+        }
         #endregion
 
         #region Implementation of IDatabase
@@ -144,14 +159,16 @@ namespace TheGarageLab.Database
             // Determine what changes need to be made
             List<Type> creations;
             List<Type> migrations;
+            List<string> removals;
             var metadata = new SchemaManager(Logger, this);
-            if (!metadata.GetRequiredChanges(models, out creations, out migrations))
+            if (!metadata.GetRequiredChanges(models, out creations, out migrations, out removals))
                 return; // Nothing to do
             // We have changes to make so back up the existing database
             string backupDatabase = BackupDatabase(connectionString);
             try
             {
                 MigrateTables(metadata, migrations);
+                RemoveTables(metadata, removals);
                 CreateNewTables(metadata, creations);
             }
             catch (Exception ex)
@@ -201,6 +218,44 @@ namespace TheGarageLab.Database
                 return new T() as IMigrator<T>;
             // Use the generic one
             return new DefaultMigrator<T>();
+        }
+
+        /// <summary>
+        /// Get information about a table by it's name
+        /// </summary>
+        /// <param name="table"></param>
+        /// <returns></returns>
+        public TableInfo GetTableInfo(string table)
+        {
+            using (var conn = Open())
+            {
+                var results = conn.Select<TableInfo>(r => r.Table == table);
+                if (results.Count == 1)
+                    return results[0];
+            }
+            return null;
+        }
+
+        /// <summary>
+        /// Get information about a table from the model type.
+        /// </summary>
+        /// <param name="model"></param>
+        /// <returns></returns>
+        public TableInfo GetTableInfo(Type model)
+        {
+            return GetTableInfo(model.GetModelMetadata().ModelName);
+        }
+
+        /// <summary>
+        /// Get information about all tables
+        /// </summary>
+        /// <returns></returns>
+        public List<TableInfo> GetTables()
+        {
+            using (var conn = Open())
+            {
+                return conn.Select<TableInfo>();
+            }
         }
         #endregion
     }

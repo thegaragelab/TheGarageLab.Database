@@ -8,7 +8,7 @@ namespace TheGarageLab.Database
     /// This class provides information about the curent database
     /// schema. It is used to manage migrations.
     /// </summary>
-    internal class SchemaMetadata
+    public class TableInfo
     {
         /// <summary>
         /// The name of the table
