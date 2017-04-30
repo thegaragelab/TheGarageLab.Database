@@ -30,12 +30,11 @@ namespace TheGarageLab.Database
 
         #region Helpers
         /// <summary>
-        /// Determine if migration is required for the given type.
+        /// Get the current version of the model.
         /// </summary>
-        /// <param name="db"></param>
         /// <param name="t"></param>
         /// <returns></returns>
-        private bool MigrationRequired(IDbConnection db, Type t)
+        private int GetModelVersion(Type t)
         {
             // Get the current version of the model
             int currentVersion = 1;
@@ -47,6 +46,18 @@ namespace TheGarageLab.Database
             {
                 // Ignore exceptions and assume version 1
             }
+            return currentVersion;
+        }
+
+        /// <summary>
+        /// Determine if migration is required for the given type.
+        /// </summary>
+        /// <param name="db"></param>
+        /// <param name="t"></param>
+        /// <returns></returns>
+        private bool MigrationRequired(IDbConnection db, Type t)
+        {
+            int currentVersion = GetModelVersion(t);
             // Get the version according to the schema record
             List<SchemaMetadata> tableInfo = db.Select<SchemaMetadata>(x => (x.Table == t.GetModelMetadata().ModelName) && (x.Version != currentVersion));
             if (tableInfo.Count == 0)
@@ -79,7 +90,20 @@ namespace TheGarageLab.Database
                 foreach (var t in models)
                 {
                     if (!MigrationRequired(db, t))
-                        db.CreateTableIfNotExists(t);
+                    {
+                        try
+                        {
+                            db.CreateTableIfNotExists(t);
+                        }
+                        catch (Exception)
+                        {
+                            throw;
+                        }
+                        finally
+                        {
+                            Logger.Info("SQL: {0}", db.GetLastSql());
+                        }
+                    }
                     else
                         toMigrate.Add(t);
                 }
@@ -156,10 +180,33 @@ namespace TheGarageLab.Database
         /// <summary>
         /// Update the schema metadata with the current models
         /// </summary>
+        /// <param name="db"></param>
         /// <param name="models"></param>
-        private void UpdateSchema(Type[] models)
+        private void UpdateSchema(IDbConnection db, Type[] models)
         {
-            throw new NotImplementedException();
+            foreach (var model in models)
+            {
+                // See if the model exists
+                string tableName = model.GetModelMetadata().ModelName;
+                var modelList = db.Select<SchemaMetadata>(db.From<SchemaMetadata>().Where(r => r.Table == tableName));
+                if (modelList.Count == 0)
+                {
+                    var metaData = new SchemaMetadata()
+                    {
+                        Table = tableName,
+                        Version = GetModelVersion(model),
+                        Created = DateTime.UtcNow,
+                        Modified = DateTime.UtcNow
+                    };
+                    db.Insert<SchemaMetadata>(metaData);
+                }
+                else
+                {
+                    modelList[0].Modified = DateTime.UtcNow;
+                    modelList[0].Version = GetModelVersion(model);
+                    db.Update(modelList[0]);
+                }
+            }
         }
         #endregion
 
@@ -179,7 +226,18 @@ namespace TheGarageLab.Database
             // Make sure we have the schema table
             using (var db = Open())
             {
-                db.CreateTableIfNotExists<SchemaMetadata>();
+                try
+                {
+                    db.CreateTableIfNotExists<SchemaMetadata>();
+                }
+                catch (Exception)
+                {
+                    throw;
+                }
+                finally
+                {
+                    Logger.Info("SQL: {0}", db.GetLastSql());
+                }
             }
             // Create any new tables and list those that require migration
             var toMigrate = CreateNewTables(models);
@@ -188,7 +246,10 @@ namespace TheGarageLab.Database
             // Finally, update the schema
             try
             {
-                UpdateSchema(models);
+                using (var db = Open())
+                {
+                    UpdateSchema(db, models);
+                }
             }
             catch (Exception ex)
             {
