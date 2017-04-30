@@ -40,7 +40,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("CreateWithModelsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
-            db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
+            db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.True(File.Exists(dbfile));
             // TODO: Access to some metadata would be handy, in the meantime
             //       we will just make sure we can add entries.
@@ -48,8 +48,6 @@ namespace TheGarageLab.Database.Test
             {
                 var id = conn.Insert<SampleModels.ModelA>(new SampleModels.ModelA());
                 Assert.Equal(1, conn.Select<SampleModels.ModelA>().Count);
-                id = conn.Insert<SampleModels.ModelB>(new SampleModels.ModelB());
-                Assert.Equal(1, conn.Select<SampleModels.ModelB>().Count);
             }
         }
 
@@ -59,7 +57,22 @@ namespace TheGarageLab.Database.Test
         [Fact]
         public void AddingAdditionalModelsWillSucceed()
         {
-            throw new NotImplementedException();
+            string dbfile = GetTestDatabaseFilename("AddingAdditionalModelsWillSucceed.sqlite");
+            Assert.False(File.Exists(dbfile));
+            // Create the database with a single model
+            IDatabase db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelA));
+            Assert.True(File.Exists(dbfile));
+            // Recreate the database with a new model
+            db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
+            // TODO: Access to some metadata would be handy, in the meantime
+            //       we will just make sure we can add entries.
+            using (var conn = db.Open())
+            {
+                var id = conn.Insert<SampleModels.ModelB>(new SampleModels.ModelB());
+                Assert.Equal(1, conn.Select<SampleModels.ModelB>().Count);
+            }
         }
 
         /// <summary>
