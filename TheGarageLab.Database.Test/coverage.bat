@@ -8,7 +8,7 @@ set ASSEMBLY=TheGarageLab.Database
 set TESTFILE=%ASSEMBLY%.Results.xml
 
 REM Generate the test results
-%COVERAGE% -register:user -target:%RUNNER% -targetargs:"%ASSEMBLY%.Test.dll" -targetdir:"bin/debug" -filter:"+%ASSEMBLY%.* +%ASSEMBLY%.Test.*" -excludebyattribute:*.ExcludeFromCodeCoverage* -mergebyhash -output:%TESTFILE%
+%COVERAGE% -register:user -target:%RUNNER% -targetargs:"%ASSEMBLY%.Test.dll" -targetdir:"bin/debug" -filter:"+[%ASSEMBLY%]* +[%ASSEMBLY%.Test]*" -excludebyattribute:*.ExcludeFromCodeCoverage* -mergebyhash -output:%TESTFILE%
 
 REM Generate the report
 %REPORTING% -reports:"%TESTFILE%" -targetdir:"CodeCoverage"
