@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using System.Data;
 using System.Collections.Generic;
 using ServiceStack.OrmLite;
@@ -9,6 +10,11 @@ namespace TheGarageLab.Database
 {
     public class Database : IDatabase
     {
+        /// <summary>
+        /// Connection string for in-memory databases
+        /// </summary>
+        public const string MEMORY_DATABASE = ":memory:";
+
         /// <summary>
         /// Logging implementation
         /// </summary>
@@ -29,6 +35,58 @@ namespace TheGarageLab.Database
         }
 
         #region Helpers
+        /// <summary>
+        /// Create a backup of the database and return the name of the
+        /// backup file.
+        /// </summary>
+        /// <param name="database"></param>
+        /// <returns></returns>
+        private string BackupDatabase(string database)
+        {
+            // Special case for in memory database or no database yet
+            if ((database == MEMORY_DATABASE) || !File.Exists(database))
+                return null;
+            // Create a backup of the file
+            string backupFile = Path.Combine(
+                Path.GetDirectoryName(database),
+                string.Format("{0}-{1}{2}",
+                    Path.GetFileNameWithoutExtension(database),
+                    DateTime.UtcNow.ToString("YYYYMMddHHmmss"),
+                    Path.GetExtension(database)
+                    )
+                );
+            File.Copy(database, backupFile);
+            return backupFile;
+        }
+
+        /// <summary>
+        /// Restore from a backup database
+        /// </summary>
+        /// <param name="database"></param>
+        /// <param name="backupFile"></param>
+        private void RestoreBackup(string database, string backupFile)
+        {
+            // Don't restore if no backup created
+            if ((backupFile == null) || !File.Exists(backupFile))
+                return;
+            // Remove the original
+            if (File.Exists(database))
+                File.Delete(database);
+            File.Move(backupFile, database);
+        }
+
+        /// <summary>
+        /// Remove the backup file if it exists
+        /// </summary>
+        /// <param name="backupFile"></param>
+        private void RemoveBackup(string backupFile)
+        {
+            // Don't restore if no backup created
+            if ((backupFile == null) || !File.Exists(backupFile))
+                return;
+            File.Delete(backupFile);
+        }
+
         /// <summary>
         /// Migrate a single table.
         /// </summary>
@@ -89,17 +147,32 @@ namespace TheGarageLab.Database
             var metadata = new SchemaManager(Logger, this);
             if (!metadata.GetRequiredChanges(models, out creations, out migrations))
                 return; // Nothing to do
-            // TODO: We have changes to make so back up the existing database
+            // We have changes to make so back up the existing database
+            string backupDatabase = BackupDatabase(connectionString);
             try
             {
                 MigrateTables(metadata, migrations);
                 CreateNewTables(metadata, creations);
             }
-            catch (Exception)
+            catch (Exception ex)
             {
-                // TODO: Restore from backup
-                throw;
+                // Restore from backup
+                Logger.Error("Database creation/migration failed. Restoring backup.");
+                try
+                {
+                    RestoreBackup(connectionString, backupDatabase);
+                }
+                catch (Exception ex2)
+                {
+                    Logger.Fatal(ex2, "Could not restore from backup database.");
+                }
+                finally
+                {
+                    throw ex;
+                }
             }
+            // Remove the backup file
+            RemoveBackup(backupDatabase);
         }
 
         /// <summary>
