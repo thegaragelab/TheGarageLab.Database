@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Data;
 using ServiceStack.DataAnnotations;
 
 namespace TheGarageLab.Database
@@ -8,6 +7,7 @@ namespace TheGarageLab.Database
     /// This class provides information about the curent database
     /// schema. It is used to manage migrations.
     /// </summary>
+    [Alias("_TableMetaData")]
     public class TableInfo
     {
         /// <summary>
