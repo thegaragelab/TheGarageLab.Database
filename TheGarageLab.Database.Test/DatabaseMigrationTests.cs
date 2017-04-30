@@ -26,6 +26,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("MigrateModelWithAdditionalFieldsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA));
             // Insert a sample record
             using (var conn = db.Open())
@@ -37,6 +38,7 @@ namespace TheGarageLab.Database.Test
             }
             // Migrate to new schema
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA_V2));
             // Ensure the model has been updated
             Assert.Equal(SampleModels.ModelA_V2.VERSION, db.GetTableInfo(typeof(SampleModels.ModelA_V2)).Version);
@@ -59,6 +61,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("MigrateModelWithRemovedFieldsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelC));
             // Insert a sample record
             using (var conn = db.Open())
@@ -71,6 +74,7 @@ namespace TheGarageLab.Database.Test
             }
             // Migrate to new schema
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelC_V2));
             // Ensure the model has been updated
             Assert.Equal(SampleModels.ModelC_V2.VERSION, db.GetTableInfo(typeof(SampleModels.ModelC_V2)).Version);
@@ -92,6 +96,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("MigrateModelWithDifferentFieldTypesWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelB));
             // Insert a sample record
             using (var conn = db.Open())
@@ -103,6 +108,7 @@ namespace TheGarageLab.Database.Test
             }
             // Migrate to new schema
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelB_V2));
             // Ensure the model has been updated
             Assert.Equal(SampleModels.ModelB_V2.VERSION, db.GetTableInfo(typeof(SampleModels.ModelB_V2)).Version);
@@ -125,6 +131,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("CannotMigrateTableToLowerVersion.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelB_V2));
             // Migrate to older schema
             db = new Database(CreateLogger());
@@ -137,6 +144,7 @@ namespace TheGarageLab.Database.Test
             string dbfile = GetTestDatabaseFilename("MigrationWillUseCustomMigrator.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelD));
             // Insert a sample record
             using (var conn = db.Open())
@@ -149,6 +157,7 @@ namespace TheGarageLab.Database.Test
             }
             // Migrate to new schema
             db = new Database(CreateLogger());
+            db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelD_V2));
             // Ensure the model has been updated
             Assert.Equal(SampleModels.ModelD_V2.VERSION, db.GetTableInfo(typeof(SampleModels.ModelD_V2)).Version);
