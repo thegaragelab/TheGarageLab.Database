@@ -24,7 +24,7 @@ namespace TheGarageLab.Database.Test
         [Fact]
         public void CreateWithNoModelsWillSucceed()
         {
-            string dbfile = GetTestDatabaseFilename("CreateWithNoModelsWillSucceed.db");
+            string dbfile = GetTestDatabaseFilename("CreateWithNoModelsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
             db.Create(dbfile);
@@ -37,7 +37,7 @@ namespace TheGarageLab.Database.Test
         [Fact]
         public void CreateWithModelsWillSucceed()
         {
-            string dbfile = GetTestDatabaseFilename("CreateWithModelsWillSucceed.db");
+            string dbfile = GetTestDatabaseFilename("CreateWithModelsWillSucceed.sqlite");
             Assert.False(File.Exists(dbfile));
             IDatabase db = new Database(CreateLogger());
             db.Create(dbfile, typeof(SampleModels.ModelA), typeof(SampleModels.ModelB));
