@@ -30,44 +30,6 @@ namespace TheGarageLab.Database
 
         #region Helpers
         /// <summary>
-        /// Get the current version of the model.
-        /// </summary>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        private int GetModelVersion(Type t)
-        {
-            // Get the current version of the model
-            int currentVersion = 1;
-            try
-            {
-                currentVersion = (int)t.GetField("VERSION", System.Reflection.BindingFlags.Static | System.Reflection.BindingFlags.Public).GetValue(null);
-            }
-            catch (Exception)
-            {
-                // Ignore exceptions and assume version 1
-            }
-            return currentVersion;
-        }
-
-        /// <summary>
-        /// Determine if migration is required for the given type.
-        /// </summary>
-        /// <param name="db"></param>
-        /// <param name="t"></param>
-        /// <returns></returns>
-        private bool MigrationRequired(IDbConnection db, Type t)
-        {
-            int currentVersion = GetModelVersion(t);
-            // Get the version according to the schema record
-            List<SchemaMetadata> tableInfo = db.Select<SchemaMetadata>(x => (x.Table == t.GetModelMetadata().ModelName) && (x.Version != currentVersion));
-            if (tableInfo.Count == 0)
-                return false;
-            if (tableInfo[0].Version > currentVersion)
-                throw new InvalidOperationException("Table cannot be migrated to an older version.");
-            return true;
-        }
-
-        /// <summary>
         /// Migrate a single table.
         /// </summary>
         /// <param name="t"></param>
@@ -77,135 +39,33 @@ namespace TheGarageLab.Database
         }
 
         /// <summary>
-        /// Create any new tables and return a list of those that
-        /// require migration.
-        /// </summary>
-        /// <param name="models"></param>
-        private List<Type> CreateNewTables(Type[] models)
-        {
-            var toMigrate = new List<Type>();
-            using (var db = Open())
-            {
-                // Create any new tables and determine which ones require migration
-                foreach (var t in models)
-                {
-                    if (!MigrationRequired(db, t))
-                    {
-                        try
-                        {
-                            db.CreateTableIfNotExists(t);
-                        }
-                        catch (Exception)
-                        {
-                            throw;
-                        }
-                        finally
-                        {
-                            Logger.Info("SQL: {0}", db.GetLastSql());
-                        }
-                    }
-                    else
-                        toMigrate.Add(t);
-                }
-            }
-            return toMigrate;
-        }
-
-        /// <summary>
-        /// Revert a migration, restoring the original data.
-        /// </summary>
-        /// <param name="t"></param>
-        private void RevertSingleMigration(Type t)
-        {
-            throw new NotImplementedException();
-        }
-
-        /// <summary>
-        /// Revert a set of migrations (in reverse order). Returns
-        /// a list of exceptions that occurred during the process.
-        /// </summary>
-        /// <param name="migrated"></param>
-        /// <returns></returns>
-        private List<Exception> RevertMigrations(List<Type> migrated)
-        {
-            var exceptions = new List<Exception>();
-            // Revert the migrations
-            migrated.Reverse();
-            foreach (var t in migrated)
-            {
-                try
-                {
-                    RevertSingleMigration(t);
-                }
-                catch (Exception reversionException)
-                {
-                    exceptions.Add(reversionException);
-                }
-            }
-            // All done
-            return exceptions;
-        }
-
-        /// <summary>
         /// Migrate the tables in the list
         /// </summary>
         /// <param name="models"></param>
-        private void MigrateTables(List<Type> toMigrate)
+        private void MigrateTables(SchemaManager manager, List<Type> models)
         {
-            // Migrate any tables that require it
-            var migrated = new List<Type>();
-            try
+            foreach (var model in models)
             {
-                foreach (var t in toMigrate)
-                {
-                    MigrateSingleTable(t);
-                    migrated.Add(t);
-                }
-            }
-            catch (Exception primaryException)
-            {
-                // Try and revert the migrations already done
-                var exceptions = RevertMigrations(migrated);
-                if (exceptions.Count > 0)
-                {
-                    // Errors occured during reversion, throw an aggregate
-                    exceptions.Insert(0, primaryException);
-                    throw new AggregateException(exceptions);
-                }
-                // Just throw the original exception
-                throw primaryException;
+                MigrateSingleTable(model);
+                manager.UpdateMetadata(model);
             }
         }
 
         /// <summary>
-        /// Update the schema metadata with the current models
+        /// Create any new tables and return a list of those that
+        /// require migration.
         /// </summary>
-        /// <param name="db"></param>
+        /// <param name="manager"></param>
         /// <param name="models"></param>
-        private void UpdateSchema(IDbConnection db, Type[] models)
+        private void CreateNewTables(SchemaManager manager, List<Type> models)
         {
             foreach (var model in models)
             {
-                // See if the model exists
-                string tableName = model.GetModelMetadata().ModelName;
-                var modelList = db.Select<SchemaMetadata>(db.From<SchemaMetadata>().Where(r => r.Table == tableName));
-                if (modelList.Count == 0)
+                using (var conn = Open())
                 {
-                    var metaData = new SchemaMetadata()
-                    {
-                        Table = tableName,
-                        Version = GetModelVersion(model),
-                        Created = DateTime.UtcNow,
-                        Modified = DateTime.UtcNow
-                    };
-                    db.Insert<SchemaMetadata>(metaData);
+                    conn.CreateTableIfNotExists(model);
                 }
-                else
-                {
-                    modelList[0].Modified = DateTime.UtcNow;
-                    modelList[0].Version = GetModelVersion(model);
-                    db.Update(modelList[0]);
-                }
+                manager.UpdateMetadata(model);
             }
         }
         #endregion
@@ -223,46 +83,22 @@ namespace TheGarageLab.Database
                 connectionString,
                 SqliteDialect.Provider
                 );
-            // Make sure we have the schema table
-            using (var db = Open())
-            {
-                try
-                {
-                    db.CreateTableIfNotExists<SchemaMetadata>();
-                }
-                catch (Exception)
-                {
-                    throw;
-                }
-                finally
-                {
-                    Logger.Info("SQL: {0}", db.GetLastSql());
-                }
-            }
-            // Create any new tables and list those that require migration
-            var toMigrate = CreateNewTables(models);
-            // Migrate tables
-            MigrateTables(toMigrate);
-            // Finally, update the schema
+            // Determine what changes need to be made
+            List<Type> creations;
+            List<Type> migrations;
+            var metadata = new SchemaManager(Logger, this);
+            if (!metadata.GetRequiredChanges(models, out creations, out migrations))
+                return; // Nothing to do
+            // TODO: We have changes to make so back up the existing database
             try
             {
-                using (var db = Open())
-                {
-                    UpdateSchema(db, models);
-                }
+                MigrateTables(metadata, migrations);
+                CreateNewTables(metadata, creations);
             }
-            catch (Exception ex)
+            catch (Exception)
             {
-                // Rollback migrations
-                var exceptions = RevertMigrations(new List<Type>(models));
-                if (exceptions.Count > 0)
-                {
-                    // Exceptions occured during rollback, throw an aggregate
-                    exceptions.Insert(0, ex);
-                    throw new AggregateException(exceptions);
-                }
-                // Just throw the original exception
-                throw ex;
+                // TODO: Restore from backup
+                throw;
             }
         }
 

@@ -78,6 +78,7 @@
     <Compile Include="IDatabase.cs" />
     <Compile Include="IMigrator.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="SchemaManager.cs" />
     <Compile Include="SchemaMetadata.cs" />
   </ItemGroup>
   <ItemGroup>
