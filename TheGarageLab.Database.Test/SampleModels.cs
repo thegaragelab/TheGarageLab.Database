@@ -57,5 +57,27 @@ namespace TheGarageLab.Database.Test
         {
             public static int VERSION = 3;
         }
+
+        [Alias("ModelC")]
+        public class ModelC
+        {
+            public static int VERSION = 1;
+
+            public int Id { get; set; }
+
+            public string Value { get; set; }
+
+            public string Description { get; set; }
+        }
+
+        [Alias("ModelC")]
+        public class ModelC_V2
+        {
+            public static int VERSION = 2;
+
+            public int Id { get; set; }
+
+            public string Value { get; set; }
+        }
     }
 }

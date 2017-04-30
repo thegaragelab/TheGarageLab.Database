@@ -9,13 +9,13 @@ namespace TheGarageLab.Database.Test
     /// <summary>
     /// Test database creation.
     /// </summary>
-    public class DatabaseCreationTest : TestBase
+    public class DatabaseCreationTests : TestBase
     {
         /// <summary>
         /// Constructor with output helper
         /// </summary>
         /// <param name="outputHelper"></param>
-        public DatabaseCreationTest(ITestOutputHelper outputHelper) : base(outputHelper) { }
+        public DatabaseCreationTests(ITestOutputHelper outputHelper) : base(outputHelper) { }
 
         /// <summary>
         /// A database with no models is not much use but it
