@@ -52,7 +52,7 @@ namespace TheGarageLab.Database
                 Path.GetDirectoryName(database),
                 string.Format("{0}-{1}{2}",
                     Path.GetFileNameWithoutExtension(database),
-                    DateTime.UtcNow.ToString("YYYYMMddHHmmss"),
+                    DateTime.UtcNow.ToString("yyyyMMddHHmmss"),
                     Path.GetExtension(database)
                     )
                 );

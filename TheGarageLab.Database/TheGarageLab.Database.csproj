@@ -72,7 +72,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="BaseDataModel.cs" />
     <Compile Include="Database.cs" />
     <Compile Include="DefaultMigrator.cs" />
     <Compile Include="IDatabase.cs" />
