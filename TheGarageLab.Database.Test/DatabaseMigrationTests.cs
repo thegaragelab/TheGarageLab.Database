@@ -114,5 +114,21 @@ namespace TheGarageLab.Database.Test
                 Assert.Equal("42", records[0].Data);
             }
         }
+
+        /// <summary>
+        /// Migration can only occur upwards, cannot revert to earlier
+        /// version.
+        /// </summary>
+        [Fact]
+        public void CannotMigrateTableToLowerVersion()
+        {
+            string dbfile = GetTestDatabaseFilename("CannotMigrateTableToLowerVersion.sqlite");
+            Assert.False(File.Exists(dbfile));
+            IDatabase db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelB_V2));
+            // Migrate to older schema
+            db = new Database(CreateLogger());
+            Assert.Throws<InvalidOperationException>(() => db.Create(dbfile, typeof(SampleModels.ModelB)));
+        }
     }
 }
