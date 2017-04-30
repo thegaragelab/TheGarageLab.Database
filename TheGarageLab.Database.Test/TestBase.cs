@@ -72,7 +72,7 @@ namespace TheGarageLab.Database.Test
         public string GetTestDatabaseFilename(string baseName, bool remove = true)
         {
             string filename = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, baseName);
-            if (remove && File.Exists(filename))
+            if (remove)
                 File.Delete(filename);
             return filename;
         }

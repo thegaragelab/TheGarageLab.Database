@@ -130,5 +130,35 @@ namespace TheGarageLab.Database.Test
             db = new Database(CreateLogger());
             Assert.Throws<InvalidOperationException>(() => db.Create(dbfile, typeof(SampleModels.ModelB)));
         }
+
+        [Fact]
+        public void MigrationWillUseCustomMigrator()
+        {
+            string dbfile = GetTestDatabaseFilename("MigrationWillUseCustomMigrator.sqlite");
+            Assert.False(File.Exists(dbfile));
+            IDatabase db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelD));
+            // Insert a sample record
+            using (var conn = db.Open())
+            {
+                conn.Insert<SampleModels.ModelD>(new SampleModels.ModelD()
+                {
+                    Value = "Value",
+                    Description = "Description"
+                });
+            }
+            // Migrate to new schema
+            db = new Database(CreateLogger());
+            db.Create(dbfile, typeof(SampleModels.ModelD_V2));
+            // Ensure the model has been updated
+            Assert.Equal(SampleModels.ModelD_V2.VERSION, db.GetTableInfo(typeof(SampleModels.ModelD_V2)).Version);
+            // Ensure the data is still present
+            using (var conn = db.Open())
+            {
+                var records = conn.Select<SampleModels.ModelD_V2>();
+                Assert.Equal(1, records.Count);
+                Assert.Equal("Value (Description)", records[0].Value);
+            }
+        }
     }
 }

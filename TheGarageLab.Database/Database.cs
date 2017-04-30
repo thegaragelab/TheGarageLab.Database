@@ -80,8 +80,7 @@ namespace TheGarageLab.Database
         private void RestoreBackup(string database, string backupFile)
         {
             // Remove the original database
-            if (File.Exists(database))
-                File.Delete(database);
+            File.Delete(database);
             // Restore if we have a back up
             if ((backupFile != null) && File.Exists(backupFile))
                 File.Move(backupFile, database);
@@ -94,7 +93,7 @@ namespace TheGarageLab.Database
         private void RemoveBackup(string backupFile)
         {
             // Don't restore if no backup created
-            if ((backupFile == null) || !File.Exists(backupFile))
+            if (backupFile == null)
                 return;
             File.Delete(backupFile);
         }

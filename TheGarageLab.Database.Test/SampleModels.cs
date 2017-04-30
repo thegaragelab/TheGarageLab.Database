@@ -1,9 +1,5 @@
 ﻿using ServiceStack.DataAnnotations;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+using System.Data;
 
 namespace TheGarageLab.Database.Test
 {
@@ -78,6 +74,44 @@ namespace TheGarageLab.Database.Test
             public int Id { get; set; }
 
             public string Value { get; set; }
+        }
+
+        [Alias("ModelD")]
+        public class ModelD
+        {
+            public static int VERSION = 1;
+
+            public int Id { get; set; }
+
+            public string Value { get; set; }
+
+            public string Description { get; set; }
+        }
+
+        [Alias("ModelD")]
+        public class ModelD_V2 : DefaultMigrator
+        {
+            public static int VERSION = 2;
+
+            public int Id { get; set; }
+
+            public string Value { get; set; }
+
+            /// <summary>
+            /// Migrate a single record.
+            /// </summary>
+            /// <param name="record"></param>
+            /// <returns></returns>
+            public override object MigrateRecord(IDataRecord record)
+            {
+                // Do a standard migration
+                var result = base.MigrateRecord(record) as ModelD_V2;
+                // Make the value a combination of value and description
+                var description = record.GetValue(record.GetOrdinal("Description")).ToString();
+                result.Value = $"{result.Value} ({description})";
+                // All done
+                return result;
+            }
         }
     }
 }

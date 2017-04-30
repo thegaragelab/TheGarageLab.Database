@@ -28,7 +28,7 @@ namespace TheGarageLab.Database
         /// </summary>
         /// <param name="fromVersion"></param>
         /// <param name="model"></param>
-        public void BeginMigration(int fromVersion, Type model)
+        public virtual void BeginMigration(int fromVersion, Type model)
         {
             ModelType = model;
             // Create the field cache for faster lookup
@@ -42,7 +42,7 @@ namespace TheGarageLab.Database
         /// </summary>
         /// <param name="record"></param>
         /// <returns></returns>
-        public object MigrateRecord(IDataRecord record)
+        public virtual object MigrateRecord(IDataRecord record)
         {
             // Create the new record instance
             var instance = Activator.CreateInstance(ModelType);
