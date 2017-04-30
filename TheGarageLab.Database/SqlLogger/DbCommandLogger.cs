@@ -1,8 +1,11 @@
 ﻿using System.Data;
+using System.Diagnostics;
+using System.Diagnostics.CodeAnalysis;
 using TheGarageLab.Logging;
 
 namespace TheGarageLab.Database.SqlLogger
 {
+    [ExcludeFromCodeCoverage]
     internal class DbCommandLogger : IDbCommand
     {
         /// <summary>
@@ -137,22 +140,38 @@ namespace TheGarageLab.Database.SqlLogger
 
         public int ExecuteNonQuery()
         {
-            return Inner.ExecuteNonQuery();
+            var watch = Stopwatch.StartNew();
+            var result = Inner.ExecuteNonQuery();
+            watch.Stop();
+            Logger.Write(Severity, $"SQL ({watch.ElapsedMilliseconds}ms): {CommandText}");
+            return result;
         }
 
         public IDataReader ExecuteReader()
         {
-            return Inner.ExecuteReader();
+            var watch = Stopwatch.StartNew();
+            var result = Inner.ExecuteReader();
+            watch.Stop();
+            Logger.Write(Severity, $"SQL ({watch.ElapsedMilliseconds}ms): {CommandText}");
+            return result;
         }
 
         public IDataReader ExecuteReader(CommandBehavior behavior)
         {
-            return Inner.ExecuteReader(behavior);
+            var watch = Stopwatch.StartNew();
+            var result = Inner.ExecuteReader(behavior);
+            watch.Stop();
+            Logger.Write(Severity, $"SQL ({watch.ElapsedMilliseconds}ms): {CommandText}");
+            return result;
         }
 
         public object ExecuteScalar()
         {
-            return Inner.ExecuteScalar();
+            var watch = Stopwatch.StartNew();
+            var result = Inner.ExecuteScalar();
+            watch.Stop();
+            Logger.Write(Severity, $"SQL ({watch.ElapsedMilliseconds}ms): {CommandText}");
+            return result;
         }
 
         public void Prepare()

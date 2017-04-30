@@ -1,8 +1,10 @@
 ﻿using System.Data;
+using System.Diagnostics.CodeAnalysis;
 using TheGarageLab.Logging;
 
 namespace TheGarageLab.Database.SqlLogger
 {
+    [ExcludeFromCodeCoverage]
     class DbConnectionLogger : IDbConnection
     {
         /// <summary>
