@@ -34,16 +34,14 @@ namespace TheGarageLab.Database.Test
         }
 
         /// <summary>
-        /// A database with no models is not much use but it
-        /// will work even in a memory database
+        /// Memory databases are not supported
         /// </summary>
         [Fact]
-        public void CreateWithNoModelsWillSucceedInMemory()
+        public void CannotCreateMemoryDatabase()
         {
             IDatabase db = new Database(CreateLogger());
             db.SqlLoggingSeverity = Logging.Severity.Debug;
-            db.Create(Database.MEMORY_DATABASE);
-            Assert.Equal(0, db.GetTables().Count);
+            Assert.Throws<InvalidOperationException>(() => db.Create(Database.MEMORY_DATABASE));
         }
 
         /// <summary>
@@ -58,19 +56,6 @@ namespace TheGarageLab.Database.Test
             db.SqlLoggingSeverity = Logging.Severity.Debug;
             db.Create(dbfile, typeof(SampleModels.ModelA));
             Assert.True(File.Exists(dbfile));
-            Assert.Equal(1, db.GetTables().Count);
-            Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
-        }
-
-        /// <summary>
-        /// Creating a database with models will work with an in memory database.
-        /// </summary>
-        [Fact]
-        public void CreateWithModelsWillSucceedInMemory()
-        {
-            IDatabase db = new Database(CreateLogger());
-            db.SqlLoggingSeverity = Logging.Severity.Debug;
-            db.Create(Database.MEMORY_DATABASE, typeof(SampleModels.ModelA));
             Assert.Equal(1, db.GetTables().Count);
             Assert.NotNull(db.GetTableInfo(typeof(SampleModels.ModelA)));
         }

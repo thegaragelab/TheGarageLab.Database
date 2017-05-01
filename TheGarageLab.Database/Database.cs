@@ -46,8 +46,9 @@ namespace TheGarageLab.Database
         private string GetBackupFilename(string database)
         {
             // Must have an existing file database to backup
-            if ((database == MEMORY_DATABASE) || !File.Exists(database))
+            if (!File.Exists(database))
                 return null;
+            // Build the backup file name
             return Path.Combine(
                 Path.GetDirectoryName(database),
                 string.Format("{0}-{1}{2}",
@@ -199,7 +200,10 @@ namespace TheGarageLab.Database
         /// <param name="models"></param>
         public void Create(string connectionString, params Type[] models)
         {
+            // Check state and parameters
             Ensure.IsNull<InvalidOperationException>(ConnectionFactory);
+            Ensure.IsNotNullOrWhiteSpace(connectionString);
+            Ensure.IsFalse<InvalidOperationException>(connectionString == MEMORY_DATABASE);
             // Create a backup in case we need to make changes
             string backupDatabase = GetBackupFilename(connectionString);
             // Set up the database
